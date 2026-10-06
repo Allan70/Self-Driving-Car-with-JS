@@ -1,13 +1,74 @@
-class Visualizer{
-    constructor(){
-        this.networkCtx = networkCtx;
-        this.brain = brain; 
+class Visualizer {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        this.pointer = null;
+        const locate = e => {
+            const r = canvas.getBoundingClientRect();
+            this.pointer = {x: (e.clientX-r.left)*canvas.width/r.width, y: (e.clientY-r.top)*canvas.height/r.height};
+        };
+        canvas.addEventListener("pointermove", locate);
+        canvas.addEventListener("pointerdown", locate);
+        canvas.addEventListener("pointerleave", () => this.pointer = null);
+        this.labels = ["Left", "Front-left", "Front", "Front-right", "Right"];
+        this.actions = ["Forward", "Left", "Right", "Reverse"];
+        this.inputs = document.getElementById("inputs");
+        this.decisions = document.getElementById("decisions");
+        this.inputs.innerHTML = this.labels.map(s => `<div class="sensor"><span>${s}</span><meter min="0" max="1"></meter><output></output></div>`).join("");
+        this.decisions.innerHTML = this.actions.map(s => `<div class="decision">${s}: <strong>OFF</strong></div>`).join("");
+        this.motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     }
-
-    drawNetwork(networkCtx, brain){
-
-        // input layer
-        // middle hidden layer
-        // output layer
+    drawNetwork(car, time, id) {
+        const ctx = this.ctx, levels = car.brain.levels;
+        const layers = [levels[0].inputs, ...levels.map(l => l.outputs)];
+        const points = layers.map((values,k) => values.map((v,i) => ({x:110+k*530/(layers.length-1), y:85+i*245/Math.max(1,values.length-1)})));
+        ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+        ctx.font = "13px system-ui"; ctx.textAlign = "center"; ctx.fillStyle = "#a9b9d0";
+        points.forEach((p,k) => ctx.fillText(k===0 ? "SENSOR INPUTS" : k===layers.length-1 ? "CONTROLS" : "HIDDEN LAYER",p[0].x,30));
+        let detail = "Select a neuron or connection to inspect its live values.";
+        levels.forEach((level,k) => level.weights.forEach((weights,i) => weights.forEach((w,j) => {
+            const a=points[k][i], b=points[k+1][j], signal=level.inputs[i]*w;
+            const color=w>=0 ? "#4de0bd" : "#fb91ad";
+            ctx.strokeStyle=color; ctx.globalAlpha=0.15+Math.abs(w)*0.5; ctx.lineWidth=0.5+Math.abs(w)*2.5;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+            if(Math.abs(signal)>0.01 && !this.motion.matches) {
+                const t=(time/1400+i*0.13+j*0.07+k*0.25)%1;
+                ctx.globalAlpha=0.8; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(lerp(a.x,b.x,t),lerp(a.y,b.y,t),2+Math.abs(signal)*2,0,Math.PI*2); ctx.fill();
+            }
+            if(this.pointer) {
+                const dx=b.x-a.x,dy=b.y-a.y;
+                const t=Math.max(0,Math.min(1,((this.pointer.x-a.x)*dx+(this.pointer.y-a.y)*dy)/(dx*dx+dy*dy)));
+                if(Math.hypot(this.pointer.x-lerp(a.x,b.x,t),this.pointer.y-lerp(a.y,b.y,t))<5)
+                    detail=`Layer ${k+1}, ${i+1} → ${j+1}: weight ${w.toFixed(3)} × input ${level.inputs[i].toFixed(3)} = ${signal.toFixed(3)}`;
+            }
+        })));
+        ctx.globalAlpha=1;
+        layers.forEach((values,k) => values.forEach((v,i) => {
+            const p=points[k][i], active=v>0;
+            if(active) {
+                const pulse=this.motion.matches ? 0 : (Math.sin(time/180+i)+1)*3;
+                ctx.fillStyle="rgba(77,224,189,0.18)"; ctx.beginPath(); ctx.arc(p.x,p.y,22+pulse,0,Math.PI*2); ctx.fill();
+            }
+            ctx.beginPath(); ctx.arc(p.x,p.y,18,0,Math.PI*2); ctx.fillStyle=active ? "#4de0bd" : "#203048"; ctx.fill();
+            ctx.strokeStyle=active ? "#98f7df" : "#52657f"; ctx.lineWidth=2; ctx.stroke();
+            ctx.fillStyle=active ? "#092d25" : "#b9c9df"; ctx.font="bold 12px system-ui"; ctx.textAlign="center";
+            ctx.fillText(k===0 ? v.toFixed(2) : String(v),p.x,p.y+4);
+            ctx.fillStyle="#a9b9d0"; ctx.font="12px system-ui";
+            if(k===0) {ctx.textAlign="right";ctx.fillText(this.labels[i],p.x-28,p.y+4);}
+            if(k===layers.length-1) {ctx.textAlign="left";ctx.fillText(this.actions[i],p.x+28,p.y+4);}
+            if(this.pointer && Math.hypot(this.pointer.x-p.x,this.pointer.y-p.y)<24) {
+                if(k===0) {
+                    const r=car.sensor.readings[i];
+                    detail=`${this.labels[i]}: ${v.toFixed(3)} (0 = clear, 1 = close) · ${r ? (r.offset*car.sensor.rayLength).toFixed(1)+" px to obstacle" : "no obstacle in range"}`;
+                } else {
+                    const l=levels[k-1];
+                    detail=`${k===layers.length-1 ? this.actions[i] : "Hidden neuron "+(i+1)}: Σ(input × weight) = ${l.sums[i].toFixed(3)} > threshold ${l.biases[i].toFixed(3)} → ${v} (${active ? "firing" : "inactive"})`;
+                }
+            }
+        }));
+        document.getElementById("detail").textContent=detail;
+        document.getElementById("status").textContent=`Car #${id} · ${car.damaged ? "Collision — stopped" : "Live"} · Speed ${car.speed.toFixed(2)} px/frame · Distance ${Math.max(0,100-car.y).toFixed(0)} px`;
+        [...this.inputs.children].forEach((row,i) => {row.querySelector("meter").value=layers[0][i];row.querySelector("output").textContent=layers[0][i].toFixed(3);});
+        [...this.decisions.children].forEach((row,i) => {const on=Boolean(car.controls[["forward","left","right","reverse"][i]]);row.classList.toggle("on",on);row.querySelector("strong").textContent=on ? "ON" : "OFF";});
     }
 }

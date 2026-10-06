@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Self-Driving car - No Libraries</title>
     <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
     <canvas id="carCanvas"></canvas>
     <div id="verticalButtons">
-        <button onclick="save()">💾</button>
-        <button onclick="discard()">🚮</button>
+        <button title="Save leading brain" onclick="save()">💾</button>
+        <button title="Discard saved brain" onclick="discard()">🚮</button>
     </div>
-    <canvas id="networkCanvas"></canvas>
+    <main id="dashboard">
+<h1>Inside the leading car</h1><p id="status"></p>
+<canvas id="networkCanvas" aria-label="Live neural network"></canvas>
+<p class="legend">Green: positive weights · Pink: negative weights · Thickness: weight magnitude<br>Moving dots: weighted signals · Glowing neurons: active</p>
+<h2>Sensor inputs</h2><div id="inputs"></div>
+<h2>Driving decisions</h2><div id="decisions"></div>
+<h2>Activation function</h2><p>Binary step: a = 1 when Σ(input × weight) &gt; threshold, otherwise 0.</p>
+<p>Hover or tap a neuron or connection to inspect its live calculation.</p><output id="detail"></output>
+</main>
     <script src="network.js"></script>
     <script src="sensor.js"></script>
     <script src="road.js"></script>
     <script src="car.js"></script>
     <script src="utils.js"></script>
     <script src="controls.js"></script>
+    <script src="visualizer.js"></script>
     <script src="main.js"></script>
-    <script src="Visualizer.js"></script>
 </body>
 </html>

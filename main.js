@@ -1,10 +1,13 @@
 const carCanvas = document.getElementById("carCanvas");
 carCanvas.width = 200;
 const networkCanvas = document.getElementById("networkCanvas");
-networkCanvas.width = 300;
+networkCanvas.width = 760;
+networkCanvas.height = 380;
 
 const carCtx = carCanvas.getContext("2d");
 const networkCtx = networkCanvas.getContext("2d");
+
+const visualizer = new Visualizer(networkCanvas);
 
 const road = new Road(carCanvas.width / 2, carCanvas.width * 0.9);
 const N = 600;
@@ -79,7 +82,7 @@ function generateCars(N) {
     return cars;
 }
 
-function animate() {
+function animate(time = 0) {
     for (let i = 0; i < traffic.length; i++) {
         traffic[i].update(road.borders, []);
     }
@@ -93,7 +96,7 @@ function animate() {
     )
 
     carCanvas.height = window.innerHeight;
-    networkCanvas.height = window.innerHeight;
+
 
     carCtx.save();
     carCtx.translate(0, -bestCar.y + carCanvas.height * 0.7)
@@ -111,6 +114,6 @@ function animate() {
     bestCar.draw(carCtx, "blue", true)
     carCtx.restore();
 
-    // Visualizer.drawNetwork(networkCtx,car.brain);
+    visualizer.drawNetwork(bestCar, time, cars.indexOf(bestCar) + 1);
     requestAnimationFrame(animate);
 }

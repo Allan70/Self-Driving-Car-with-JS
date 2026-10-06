@@ -14,7 +14,7 @@ class NeuralNetwork{
     static feedForward(givenInputs, network){
         let outputs = Level.feedForward(
             givenInputs, network.levels[0]);
-            for(let i=1; i < network.levels.lenth; i++ ){
+            for(let i=1; i < network.levels.length; i++ ){
                 outputs = Level.feedForward(
                     outputs, network.levels[i]);
             }
@@ -75,12 +75,14 @@ class Level{
             level.inputs[i] = givenInputs[i];
         }
 
+        level.sums = [];
         for(let i=0; i<level.outputs.length; i++){
             let sum = 0
             for(let j = 0; j < level.inputs.length; j++){
                 sum += level.inputs[j]*level.weights[j][i];
             }
 
+            level.sums[i] = sum;
             if(sum > level.biases[i]){ //--> This is the line equation  
             // if(sum+level.biases[i]>0) --> HyperPlane Equation 
                 level.outputs[i]=1;

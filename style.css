@@ -1,32 +1,19 @@
-body{
-    margin: 0;
-    background: darkgray;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#verticalButtons{
-    display: flex;
-    flex-direction: column;
-}
-
-button{
-    border: none;
-    border-radius: 5px;
-    padding: 5px 5px 7px 5px;
-    margin: 2px;
-    cursor: pointer;
-}
-
-button:hover{
-    background:blue;
-}
-
-#carCanvas{
-    background: lightgray;
-}
-#networkCanvas{
-    background: black;
-}
+* { box-sizing: border-box; }
+body { margin: 0; background: #0b1423; color: #e2ecfa; font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: flex-start; gap: 14px; }
+#carCanvas { background: lightgray; position: sticky; top: 0; width: 200px; flex-shrink: 0; }
+#verticalButtons { display: flex; flex-direction: column; padding-top: 24px; gap: 8px; }
+button { border: 1px solid #40516a; border-radius: 6px; padding: 10px; cursor: pointer; background: #203048; color: white; }
+button:hover { background: #365274; }
+button:focus-visible { outline: 2px solid #4de0bd; }
+#dashboard { width: min(800px, calc(100vw - 310px)); padding: 20px; }
+h1 { font-size: 25px; margin: 0 0 8px; } h2 { font-size: 15px; margin-top: 22px; }
+p { font-size: 12px; line-height: 1.7; color: #a9b9d0; }
+#networkCanvas { width: 100%; background: #101d30; border: 1px solid #293d58; border-radius: 12px; }
+#inputs { display: grid; gap: 8px; }
+.sensor { display: grid; grid-template-columns: 90px 1fr 50px; align-items: center; gap: 10px; font-size: 12px; }
+meter { width: 100%; accent-color: #4de0bd; }
+#decisions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.decision { padding: 12px; border: 1px solid #3c4c63; border-radius: 8px; font-size: 13px; }
+.decision.on { background: #164337; border-color: #4de0bd; color: #4de0bd; }
+#detail { display: block; min-height: 48px; color: #4de0bd; font-size: 13px; line-height: 1.7; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) { body { flex-wrap: wrap; } #carCanvas { position: static; height: 40vh; width: auto; } #dashboard { width: 100%; padding: 12px; } }
