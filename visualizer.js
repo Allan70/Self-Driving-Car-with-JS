@@ -21,12 +21,18 @@ class Visualizer {
     drawNetwork(car, time, id) {
         const ctx = this.ctx, levels = car.brain.levels;
         const layers = [levels[0].inputs, ...levels.map(l => l.outputs)];
-        const points = layers.map((values,k) => values.map((v,i) => ({x:110+k*530/(layers.length-1), y:85+i*245/Math.max(1,values.length-1)})));
+        const showHidden = document.getElementById("showHidden").checked;
+        this.canvas.width = Math.max(760, layers.length * 220);
+        this.canvas.height = Math.max(380, Math.max(...layers.map(v => v.length)) * 52 + 100);
+        const visibleCount = showHidden ? layers.length : 2;
+        const visible = k => showHidden || k === 0 || k === layers.length - 1;
+        const points = layers.map((values,k) => values.map((v,i) => ({x:110+(showHidden ? k : (k === 0 ? 0 : 1))*(this.canvas.width-230)/(visibleCount-1), y:85+i*(this.canvas.height-140)/Math.max(1,values.length-1)})));
         ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
         ctx.font = "13px system-ui"; ctx.textAlign = "center"; ctx.fillStyle = "#a9b9d0";
-        points.forEach((p,k) => ctx.fillText(k===0 ? "SENSOR INPUTS" : k===layers.length-1 ? "CONTROLS" : "HIDDEN LAYER",p[0].x,30));
+        points.forEach((p,k) => visible(k) && ctx.fillText(k===0 ? "SENSOR INPUTS" : k===layers.length-1 ? "CONTROLS" : "HIDDEN " + k,p[0].x,30));
         let detail = "Select a neuron or connection to inspect its live values.";
         levels.forEach((level,k) => level.weights.forEach((weights,i) => weights.forEach((w,j) => {
+            if (!visible(k) || !visible(k+1)) return;
             const a=points[k][i], b=points[k+1][j], signal=level.inputs[i]*w;
             const color=w>=0 ? "#4de0bd" : "#fb91ad";
             ctx.strokeStyle=color; ctx.globalAlpha=0.15+Math.abs(w)*0.5; ctx.lineWidth=0.5+Math.abs(w)*2.5;
@@ -44,6 +50,7 @@ class Visualizer {
         })));
         ctx.globalAlpha=1;
         layers.forEach((values,k) => values.forEach((v,i) => {
+            if (!visible(k)) return;
             const p=points[k][i], active=v>0;
             if(active) {
                 const pulse=this.motion.matches ? 0 : (Math.sin(time/180+i)+1)*3;

@@ -11,20 +11,8 @@ const visualizer = new Visualizer(networkCanvas);
 
 const road = new Road(carCanvas.width / 2, carCanvas.width * 0.9);
 const N = 600;
-const cars = generateCars(N)
+let cars = generateCars(N)
 let bestCar = cars[0];
-
-if (localStorage.getItem("bestBrain")) {
-    for (let i = 0; i < cars.length; i++) {
-
-        cars[i].brain = JSON.parse(
-            localStorage.getItem("bestBrain"));
-        if(i!=0){
-            NeuralNetwork.mutate(cars[i].brain, 0.1)
-        }
-    }
-
-}
 
 const traffic = [
     new Car(road.getLaneCenter(0), -100, 30, 50, "DUMMY", 2),
@@ -64,19 +52,12 @@ const traffic = [
     new Car(road.getLaneCenter(0), -7300, 30, 50, "DUMMY", 2),
 ]
 
+initializeSession();
 animate();
-
-function save() {
-    localStorage.setItem("bestBrain", JSON.stringify(bestCar.brain));
-}
-
-function discard() {
-    localStorage.removeItem("bestBrain")
-}
 
 function generateCars(N) {
     const cars = [];
-    for (let i = 1; i < N; i++) {
+    for (let i = 0; i < N; i++) {
         cars.push(new Car(road.getLaneCenter(1), 100, 30, 50, "AI"))
     }
     return cars;
@@ -88,12 +69,10 @@ function animate(time = 0) {
     }
 
     for (let i = 0; i < cars.length; i++) {
-        cars[i].update(road.borders, traffic);
+        if (driveMode === "AI" || cars[i] === manualCar) cars[i].update(road.borders, traffic);
     }
-    bestCar = cars.find(
-        // Find the car whose y value is the minimum value of all the y values
-        c => c.y == Math.min(...cars.map(c => c.y))
-    )
+    bestCar = driveMode === "MANUAL" ? manualCar : cars.reduce((leader, car) => car.y < leader.y ? car : leader);
+    updateRunningWeights();
 
     carCanvas.height = window.innerHeight;
 

@@ -5,7 +5,7 @@ body { margin: 0; background: #0b1423; color: #e2ecfa; font-family: system-ui, s
 button { border: 1px solid #40516a; border-radius: 6px; padding: 10px; cursor: pointer; background: #203048; color: white; }
 button:hover { background: #365274; }
 button:focus-visible { outline: 2px solid #4de0bd; }
-#dashboard { width: min(800px, calc(100vw - 310px)); padding: 20px; }
+#dashboard { width: min(800px, calc(100vw - 235px)); padding: 20px; }
 h1 { font-size: 25px; margin: 0 0 8px; } h2 { font-size: 15px; margin-top: 22px; }
 p { font-size: 12px; line-height: 1.7; color: #a9b9d0; }
 #networkCanvas { width: 100%; background: #101d30; border: 1px solid #293d58; border-radius: 12px; }
@@ -17,3 +17,15 @@ meter { width: 100%; accent-color: #4de0bd; }
 .decision.on { background: #164337; border-color: #4de0bd; color: #4de0bd; }
 #detail { display: block; min-height: 48px; color: #4de0bd; font-size: 13px; line-height: 1.7; font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) { body { flex-wrap: wrap; } #carCanvas { position: static; height: 40vh; width: auto; } #dashboard { width: 100%; padding: 12px; } }
+
+.tools { padding: 16px; border: 1px solid #293d58; border-radius: 12px; margin-bottom: 20px; background: #101d30; }
+.tools label { display: block; margin: 10px 0; font-size: 13px; }
+input, select { background: #17263b; color: #e2ecfa; border: 1px solid #40516a; border-radius: 5px; padding: 8px; max-width: 100%; }
+select, #snapshotName { width: 100%; margin-top: 6px; }
+button:disabled { opacity: .4; cursor: default; }
+.button-row, .layer-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: center; }
+.layer-row input { width: 75px; }
+#runningWeights { font-size: 12px; line-height: 1.8; padding-left: 18px; }
+summary { cursor: pointer; font-size: 14px; }
+#networkCanvas { min-width: 760px; width: auto; max-width: none; }
+.network-scroll { overflow-x: auto; max-width: 100%; }
