@@ -28,11 +28,13 @@
 </details>
 </section><p id="status"></p>
 <div class="network-scroll"><canvas id="networkCanvas" aria-label="Live neural network"></canvas></div>
+<section class="neuron-inspector"><h2>Live neuron calculation</h2><p>Hover to inspect. Tap/click to pin a neuron; tap empty space to clear.</p><output id="detail"></output></section>
+<div id="neuronTooltip" role="tooltip" hidden></div>
 <p class="legend">Green: positive weights · Pink: negative weights · Thickness: weight magnitude<br>Moving dots: weighted signals · Glowing neurons: active</p>
 <h2>Sensor inputs</h2><div id="inputs"></div>
 <h2>Vehicle controls <small>(network proposals appear in the output neurons)</small></h2><div id="decisions"></div>
 <h2>Activation function</h2><p>Binary step: a = 1 when Σ(input × weight) &gt; threshold, otherwise 0.</p>
-<p>Hover or tap a neuron or connection to inspect its live calculation.</p><output id="detail"></output>
+<p>The inspector shows each input × weight contribution, the weighted sum, threshold, and activation result as the vehicle runs.</p>
 </main>
     <script src="network.js"></script>
     <script src="sensor.js"></script>

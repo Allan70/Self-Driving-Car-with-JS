@@ -3,12 +3,18 @@ class Visualizer {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.pointer = null;
+        this.selectedNeuron = null;
+        this.nodePositions = [];
         const locate = e => {
             const r = canvas.getBoundingClientRect();
+            this.clientPointer = {x: e.clientX, y: e.clientY};
             this.pointer = {x: (e.clientX-r.left)*canvas.width/r.width, y: (e.clientY-r.top)*canvas.height/r.height};
         };
         canvas.addEventListener("pointermove", locate);
-        canvas.addEventListener("pointerdown", locate);
+        canvas.addEventListener("pointerdown", e => {
+            locate(e);
+            this.selectedNeuron = this.nodePositions.find(node => Math.hypot(this.pointer.x-node.x, this.pointer.y-node.y)<24) || null;
+        });
         canvas.addEventListener("pointerleave", () => this.pointer = null);
         this.labels = ["Left", "Front-left", "Front", "Front-right", "Right"];
         this.actions = ["Forward", "Left", "Right", "Reverse"];
@@ -30,7 +36,11 @@ class Visualizer {
         ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
         ctx.font = "13px system-ui"; ctx.textAlign = "center"; ctx.fillStyle = "#a9b9d0";
         points.forEach((p,k) => visible(k) && ctx.fillText(k===0 ? "SENSOR INPUTS" : k===layers.length-1 ? "CONTROLS" : "HIDDEN " + k,p[0].x,30));
-        let detail = "Select a neuron or connection to inspect its live values.";
+        this.nodePositions = points.flatMap((nodes, layer) => visible(layer) ? nodes.map((point, index) => ({...point, layer, index})) : []);
+        if (this.selectedNeuron && (!visible(this.selectedNeuron.layer) || layers[this.selectedNeuron.layer]?.[this.selectedNeuron.index] === undefined)) this.selectedNeuron = null;
+        let inspected = this.selectedNeuron;
+        let hovered = null;
+        let detail = "Hover a neuron for its live calculation. Tap/click to pin it; tap empty space to clear.";
         levels.forEach((level,k) => level.weights.forEach((weights,i) => weights.forEach((w,j) => {
             if (!visible(k) || !visible(k+1)) return;
             const a=points[k][i], b=points[k+1][j], signal=level.inputs[i]*w;
@@ -57,22 +67,45 @@ class Visualizer {
                 ctx.fillStyle="rgba(77,224,189,0.18)"; ctx.beginPath(); ctx.arc(p.x,p.y,22+pulse,0,Math.PI*2); ctx.fill();
             }
             ctx.beginPath(); ctx.arc(p.x,p.y,18,0,Math.PI*2); ctx.fillStyle=active ? "#4de0bd" : "#203048"; ctx.fill();
-            ctx.strokeStyle=active ? "#98f7df" : "#52657f"; ctx.lineWidth=2; ctx.stroke();
+            const selected = this.selectedNeuron?.layer === k && this.selectedNeuron?.index === i;
+            ctx.strokeStyle=selected ? "#ffffff" : active ? "#98f7df" : "#52657f"; ctx.lineWidth=selected ? 4 : 2; ctx.stroke();
             ctx.fillStyle=active ? "#092d25" : "#b9c9df"; ctx.font="bold 12px system-ui"; ctx.textAlign="center";
             ctx.fillText(k===0 ? v.toFixed(2) : String(v),p.x,p.y+4);
             ctx.fillStyle="#a9b9d0"; ctx.font="12px system-ui";
             if(k===0) {ctx.textAlign="right";ctx.fillText(this.labels[i],p.x-28,p.y+4);}
             if(k===layers.length-1) {ctx.textAlign="left";ctx.fillText(this.actions[i],p.x+28,p.y+4);}
             if(this.pointer && Math.hypot(this.pointer.x-p.x,this.pointer.y-p.y)<24) {
-                if(k===0) {
-                    const r=car.sensor.readings[i];
-                    detail=`${this.labels[i]}: ${v.toFixed(3)} (0 = clear, 1 = close) · ${r ? (r.offset*car.sensor.rayLength).toFixed(1)+" px to obstacle" : "no obstacle in range"}`;
-                } else {
-                    const l=levels[k-1];
-                    detail=`${k===layers.length-1 ? this.actions[i] : "Hidden neuron "+(i+1)}: Σ(input × weight) = ${l.sums[i].toFixed(3)} > threshold ${l.biases[i].toFixed(3)} → ${v} (${active ? "firing" : "inactive"})`;
-                }
+                hovered = {layer:k,index:i};
+                inspected = hovered;
             }
         }));
+        let summary = "";
+        if (inspected) {
+            const {layer:k,index:i} = inspected;
+            const v = layers[k][i];
+            if (k === 0) {
+                const r = car.sensor.readings[i];
+                summary = `${this.labels[i]} sensor · input ${v.toFixed(3)}`;
+                detail = `${summary}\n${r ? `Hit distance = ${r.offset.toFixed(3)} × ${car.sensor.rayLength} = ${(r.offset*car.sensor.rayLength).toFixed(2)} px\nInput = 1 − offset = 1 − ${r.offset.toFixed(3)} = ${v.toFixed(3)}` : "No obstacle within range → input = 0"}`;
+            } else {
+                const l = levels[k-1];
+                const title = k === layers.length-1 ? `${this.actions[i]} output` : `Hidden layer ${k}, neuron ${i+1}`;
+                const terms = l.inputs.map((input,j) => {
+                    const label = k === 1 ? this.labels[j] : `Layer ${k-1} neuron ${j+1}`;
+                    return `${label}: ${input.toFixed(4)} × ${l.weights[j][i].toFixed(4)} = ${(input*l.weights[j][i]).toFixed(4)}`;
+                });
+                const sum = l.sums[i], threshold = l.biases[i];
+                summary = `${title}\nΣ = ${sum.toFixed(4)} · threshold = ${threshold.toFixed(4)}\n${sum.toFixed(4)} ${sum>threshold ? ">" : "≤"} ${threshold.toFixed(4)} → ${v} (${v ? "firing" : "inactive"})`;
+                detail = `${title}${this.selectedNeuron?.layer === k && this.selectedNeuron?.index === i ? " · pinned" : ""}\n${terms.join("\n")}\nWeighted sum Σ = ${sum.toFixed(4)}\nThreshold = ${threshold.toFixed(4)}\nActivation: a = Σ > threshold ? 1 : 0\nResult: ${sum.toFixed(4)} ${sum>threshold ? ">" : "≤"} ${threshold.toFixed(4)} → ${v} (${v ? "firing" : "inactive"})`;
+            }
+        }
+        const tooltip = document.getElementById("neuronTooltip");
+        tooltip.hidden = !hovered;
+        if (hovered && this.clientPointer) {
+            tooltip.textContent = summary;
+            tooltip.style.left = `${Math.max(8, Math.min(this.clientPointer.x+18, window.innerWidth-310))}px`;
+            tooltip.style.top = `${Math.max(8, Math.min(this.clientPointer.y+18, window.innerHeight-130))}px`;
+        }
         document.getElementById("detail").textContent=detail;
         document.getElementById("status").textContent=`Car #${id} · ${car.damaged ? "Collision — stopped" : "Live"} · Speed ${car.speed.toFixed(2)} px/frame · Distance ${Math.max(0,100-car.y).toFixed(0)} px`;
         [...this.inputs.children].forEach((row,i) => {row.querySelector("meter").value=layers[0][i];row.querySelector("output").textContent=layers[0][i].toFixed(3);});

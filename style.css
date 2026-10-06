@@ -29,3 +29,9 @@ button:disabled { opacity: .4; cursor: default; }
 summary { cursor: pointer; font-size: 14px; }
 #networkCanvas { min-width: 760px; width: auto; max-width: none; }
 .network-scroll { overflow-x: auto; max-width: 100%; }
+
+.neuron-inspector { background: #101d30; border: 1px solid #40516a; border-radius: 10px; padding: 14px; margin-top: 10px; }
+.neuron-inspector h2 { margin-top: 0; }
+#detail { white-space: pre-wrap; max-height: 340px; overflow-y: auto; font-family: ui-monospace, monospace; }
+#neuronTooltip { position: fixed; z-index: 10; pointer-events: none; width: 290px; max-width: calc(100vw - 16px); padding: 12px; background: #17263b; border: 1px solid #4de0bd; border-radius: 8px; box-shadow: 0 8px 28px #0008; color: #e2ecfa; font: 12px/1.6 ui-monospace, monospace; white-space: pre-wrap; }
+#networkCanvas { cursor: crosshair; }
